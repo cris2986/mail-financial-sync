@@ -2,36 +2,121 @@
 
 Aplicación web para sincronizar eventos financieros reales desde Gmail y mostrar un resumen mensual.
 
-## Requisitos
+## 🚀 Demo en Producción
 
-- Node.js 18+
-- `VITE_GOOGLE_CLIENT_ID` configurado
+**[https://mail-financial-sync.vercel.app](https://mail-financial-sync.vercel.app)**
 
-## Desarrollo local
+## ✨ Características
 
-1. Instala dependencias:
-   ```bash
-   npm install --legacy-peer-deps
-   ```
-2. Crea `.env` desde `.env.example` y completa:
-   - `VITE_GOOGLE_CLIENT_ID` (obligatorio)
-   - `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` (opcionales)
-3. Ejecuta:
-   ```bash
-   npm run dev
-   ```
+- 🔐 **Autenticación Gmail OAuth**: Conexión segura con Google Identity Services
+- 📧 **Scanning Inteligente**: Detección automática de transacciones financieras
+- 📊 **Dashboard Interactivo**: Visualización mensual de ingresos y gastos
+- 🏷️ **Categorización**: Clasificación automática por tipo de transacción
+- 📱 **PWA Ready**: Instalable como aplicación móvil
+- 🔔 **Notificaciones**: Alertas de nuevos movimientos
+- ☁️ **Sync en la Nube**: Persistencia opcional con Supabase
+- 🌙 **Modo Oscuro**: Interfaz adaptable
 
-## Scripts
+## 🛠️ Stack Tecnológico
 
-- `npm run dev` inicia entorno local
-- `npm run test:run` ejecuta pruebas unitarias y de flujo
-- `npm run build` genera build de producción
-- `npm run check` ejecuta pruebas + build
+- **Frontend**: React 18 + TypeScript + Vite
+- **Estilos**: Tailwind CSS + Material Icons
+- **Estado**: Zustand con persistencia
+- **APIs**: Gmail API + Google OAuth 2.0
+- **Backend**: Supabase (opcional)
+- **PWA**: Service Worker + Web App Manifest
+- **Testing**: Vitest + Testing Library
 
-## Notas
+## ⚙️ Configuración
 
-- No existe modo demo ni acceso de invitado.
-- La conexión requiere autenticación real con Gmail.
-- Supabase es opcional; si no está configurado, los datos permanecen en almacenamiento local.
-- Incluye manifest y service worker para instalación como PWA.
-- Incluye notificaciones del navegador para nuevos movimientos (al habilitarlas en Ajustes).
+### Variables de Entorno
+
+Crea un archivo `.env` desde `.env.example`:
+
+```bash
+# Google OAuth (obligatorio)
+VITE_GOOGLE_CLIENT_ID=tu_google_client_id
+
+# Supabase (opcional - para persistencia en la nube)
+VITE_SUPABASE_URL=tu_supabase_url
+VITE_SUPABASE_ANON_KEY=tu_supabase_anon_key
+```
+
+### Google Cloud Console
+
+1. Crea un proyecto en [Google Cloud Console](https://console.cloud.google.com)
+2. Habilita **Gmail API**
+3. Crea **OAuth 2.0 Client ID**
+4. Configura los URIs autorizados:
+   - **Development**: `http://localhost:3002/auth/callback`
+   - **Production**: `https://mail-financial-sync.vercel.app/auth/callback`
+
+## 🚀 Deployment
+
+### Desarrollo Local
+
+```bash
+# Instalar dependencias
+npm install
+
+# Iniciar servidor de desarrollo
+npm run dev
+
+# Ejecutar pruebas
+npm run test:run
+
+# Build de producción
+npm run build
+```
+
+### Deploy en Vercel
+
+1. **Fork** este repositorio
+2. **Conecta** tu cuenta de Vercel
+3. **Importa** el proyecto desde GitHub
+4. **Configura** las variables de entorno en Vercel:
+   - `VITE_GOOGLE_CLIENT_ID`
+   - `VITE_SUPABASE_URL` (opcional)
+   - `VITE_SUPABASE_ANON_KEY` (opcional)
+5. **Deploy** automático
+
+## 🧪 Testing
+
+```bash
+# Ejecutar todas las pruebas
+npm run test:run
+
+# Ejecutar pruebas específicas
+npm run test:run -- --run store.test.ts
+npm run test:run -- --run app.flow.test.ts
+```
+
+## 📱 PWA
+
+La aplicación es una **Progressive Web App**:
+- Instalable en dispositivos móviles
+- Funciona offline (básico)
+- Notificaciones push
+- Icono adaptativo
+
+## 🔒 Seguridad
+
+- **Content Security Policy** configurada
+- **OAuth 2.0** con scopes mínimos
+- **Sin secrets** en el frontend
+- **HTTPS** obligatorio en producción
+
+## 📄 Licencia
+
+MIT License - ver archivo [LICENSE](LICENSE)
+
+## 🤝 Contribuir
+
+1. Fork el proyecto
+2. Crear feature branch
+3. Hacer commit de cambios
+4. Abrir Pull Request
+
+---
+
+**Desarrollado con ❤️ para la gestión financiera personal**
