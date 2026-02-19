@@ -104,6 +104,12 @@ const getInitialNotificationPermission = (): NotificationPermission | 'unsupport
   return getCurrentNotificationPermission();
 };
 
+const sanitizeCsvCell = (value: string): string => {
+  const normalized = value.replace(/\r?\n/g, ' ').trim();
+  const guarded = /^[=+\-@]/.test(normalized) ? `'${normalized}` : normalized;
+  return guarded.replace(/"/g, '""');
+};
+
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
@@ -428,8 +434,16 @@ export const useAppStore = create<AppState>()(
       // Guardar en Supabase si está configurado
       const supabase = getSupabase();
       if (supabase && user.googleId) {
-        // Obtener usuario de Supabase
-        const supabaseUser = await supabase.getUser(user.googleId);
+        // Obtener usuario de Supabase (o crearlo si no existe)
+        let supabaseUser = await supabase.getUser(user.googleId);
+
+        if (!supabaseUser) {
+          supabaseUser = await supabase.createUser({
+            email: user.email,
+            name: user.name,
+            google_id: user.googleId
+          });
+        }
 
         if (supabaseUser) {
           // Guardar solo eventos nuevos
@@ -445,17 +459,7 @@ export const useAppStore = create<AppState>()(
           }));
 
           if (eventsToSave.length > 0) {
-            try {
-              await supabase.createEvents(eventsToSave);
-            } catch (error) {
-              // Ignorar errores de duplicados - es normal en sincronización incremental
-              if (error.message && error.message.includes('duplicate key')) {
-                console.warn('[Sync] Algunos eventos ya existen en Supabase (normal en sync incremental)');
-              } else {
-                console.error('[Sync] Error guardando eventos en Supabase:', error);
-                // No fallar toda la sincronización por errores de Supabase
-              }
-            }
+            await supabase.createEvents(eventsToSave);
           }
         }
       }
@@ -545,7 +549,10 @@ export const useAppStore = create<AppState>()(
     if (user?.googleId) {
       const supabase = getSupabase();
       if (supabase) {
-        await supabase.deleteEvent(id);
+        const supabaseUser = await supabase.getUser(user.googleId);
+        if (supabaseUser) {
+          await supabase.deleteEventByEmailId(supabaseUser.id, id);
+        }
       }
     }
   },
@@ -699,7 +706,7 @@ export const useAppStore = create<AppState>()(
 
     const csvContent = [
       headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+      ...rows.map((row) => row.map((cell) => `"${sanitizeCsvCell(String(cell))}"`).join(','))
     ].join('\n');
 
     return csvContent;
@@ -710,7 +717,6 @@ export const useAppStore = create<AppState>()(
       storage: createJSONStorage(() => localStorage),
       // Solo persistir datos necesarios (no funciones ni estados temporales)
       partialize: (state) => ({
-        user: state.user,
         events: state.events,
         darkMode: state.darkMode,
         notificationsEnabled: state.notificationsEnabled,
@@ -724,6 +730,8 @@ export const useAppStore = create<AppState>()(
         return {
           ...currentState,
           ...persisted,
+          user: null,
+          authStatus: 'unauthenticated',
           notificationsEnabled: notificationPermission === 'granted'
             ? Boolean(persisted.notificationsEnabled)
             : false,
@@ -743,17 +751,11 @@ export const useAppStore = create<AppState>()(
         }
         if (state) {
           debugLog('[Store] Datos rehidratados desde localStorage');
-          debugLog('[Store] Usuario:', state.user?.email || 'ninguno');
           debugLog('[Store] Eventos recuperados:', state.events?.length || 0);
           debugLog('[Store] Última sincronización:', state.syncMetadata?.lastSyncTimestamp);
 
-          // Restaurar estado de autenticación basado en usuario persistido
-          if (state.user?.isAuthenticated) {
-            // El usuario estaba autenticado, restaurar estado
-            // Nota: el token podría estar expirado, ensureValidToken lo manejará
-            state.authStatus = 'authenticated';
-            debugLog('[Store] Sesión restaurada para:', state.user.email);
-          }
+          state.user = null;
+          state.authStatus = 'unauthenticated';
 
           state.notificationPermission = getCurrentNotificationPermission();
           if (state.notificationPermission !== 'granted') {

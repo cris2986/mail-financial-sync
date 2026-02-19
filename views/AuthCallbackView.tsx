@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppStore } from '../store';
+import { consumeOAuthState } from '../services/googleAuth';
 
 export const AuthCallbackView: React.FC = () => {
   const navigate = useNavigate();
@@ -16,6 +17,7 @@ export const AuthCallbackView: React.FC = () => {
       const hashErrorDescription = hashParams.get('error_description');
       const accessToken = hashParams.get('access_token');
       const expiresInRaw = hashParams.get('expires_in');
+      const returnedState = hashParams.get('state');
 
       if (hashError) {
         setError(hashErrorDescription || 'Se canceló el proceso de autorización.');
@@ -24,6 +26,13 @@ export const AuthCallbackView: React.FC = () => {
       }
 
       if (accessToken) {
+        const expectedState = consumeOAuthState();
+        if (!returnedState || !expectedState || returnedState !== expectedState) {
+          setError('Respuesta OAuth inválida. Intenta conectar tu cuenta nuevamente.');
+          setTimeout(() => navigate('/login'), 3000);
+          return;
+        }
+
         const expiresIn = Number(expiresInRaw || '3600');
         const safeExpiresIn = Number.isFinite(expiresIn) ? expiresIn : 3600;
 

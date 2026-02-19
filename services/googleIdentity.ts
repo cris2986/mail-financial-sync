@@ -62,16 +62,29 @@ let tokenClient: TokenClient | null = null;
 // Inicializar el cliente de tokens
 export const initGoogleAuth = (): Promise<void> => {
   return new Promise((resolve, reject) => {
+    let settled = false;
+    let pollTimer: number | undefined;
+    const timeoutTimer = window.setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      if (pollTimer) {
+        window.clearTimeout(pollTimer);
+      }
+      reject(new Error('Google Identity Services no cargó'));
+    }, 10000);
+
     const checkGoogleLoaded = () => {
+      if (settled) return;
+
       if (window.google?.accounts?.oauth2) {
+        settled = true;
+        window.clearTimeout(timeoutTimer);
         resolve();
       } else {
-        setTimeout(checkGoogleLoaded, 100);
+        pollTimer = window.setTimeout(checkGoogleLoaded, 100);
       }
     };
 
-    // Timeout después de 10 segundos
-    setTimeout(() => reject(new Error('Google Identity Services no cargó')), 10000);
     checkGoogleLoaded();
   });
 };

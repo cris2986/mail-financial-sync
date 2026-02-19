@@ -7,11 +7,15 @@ export interface SupabaseUser {
   email: string;
   name: string;
   google_id: string;
-  access_token: string;
-  refresh_token: string;
-  token_expires_at: string;
+  auth_user_id: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface SupabaseUserInsert {
+  email: string;
+  name: string;
+  google_id: string;
 }
 
 export interface SupabaseEvent {
@@ -41,7 +45,7 @@ class SupabaseClient {
     table: string,
     method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
     options?: {
-      body?: object;
+      body?: object | object[];
       filters?: Record<string, string>;
       select?: string;
       single?: boolean;
@@ -51,7 +55,7 @@ class SupabaseClient {
       'apikey': this.key,
       'Authorization': `Bearer ${this.key}`,
       'Content-Type': 'application/json',
-      'Prefer': options?.single ? 'return=representation' : 'return=representation'
+      'Prefer': 'return=representation'
     };
 
     let url = `${this.url}/rest/v1/${table}`;
@@ -81,7 +85,7 @@ class SupabaseClient {
     if (!response.ok) {
       const error = await response.text();
       
-      // Ignorar errores de duplicados (conflictos) - es normal en sincronización incremental
+      // Ignorar duplicados (esperables en sync incremental)
       if (response.status === 409) {
         console.warn('Supabase: Evento duplicado ignorado (normal en sync incremental):', error);
         return null;
@@ -107,7 +111,7 @@ class SupabaseClient {
     });
   }
 
-  async createUser(user: Omit<SupabaseUser, 'id' | 'created_at' | 'updated_at'>): Promise<SupabaseUser | null> {
+  async createUser(user: SupabaseUserInsert): Promise<SupabaseUser | null> {
     const users = await this.request<SupabaseUser[]>('users', 'POST', {
       body: user
     });
@@ -129,8 +133,6 @@ class SupabaseClient {
     if (month) {
       // Filtrar por mes (YYYY-MM)
       const startDate = `${month}-01`;
-      const [year, monthNum] = month.split('-').map(Number);
-      const endDate = new Date(year, monthNum, 0).toISOString().split('T')[0];
       filters.date = `gte.${startDate}`;
     }
 
@@ -146,42 +148,19 @@ class SupabaseClient {
   }
 
   async createEvents(events: Omit<SupabaseEvent, 'id' | 'created_at'>[]): Promise<SupabaseEvent[]> {
-    try {
-      const created = await this.request<SupabaseEvent[]>('events', 'POST', {
-        body: events
-      });
-      return created || [];
-    } catch (error) {
-      // Si hay un error de duplicados, intentar crear eventos individualmente
-      if (error.message && error.message.includes('duplicate key')) {
-        console.warn('Supabase: Detectados duplicados, intentando crear eventos individualmente...');
-        const createdEvents: SupabaseEvent[] = [];
-        
-        for (const event of events) {
-          try {
-            const created = await this.createEvent(event);
-            if (created) {
-              createdEvents.push(created);
-            }
-          } catch (e) {
-            // Ignorar errores de duplicados individuales
-            if (e.message && e.message.includes('duplicate key')) {
-              console.warn(`Supabase: Evento duplicado ignorado: ${event.email_id}`);
-              continue;
-            }
-            throw e;
-          }
-        }
-        
-        return createdEvents;
-      }
-      throw error;
-    }
+    const created = await this.request<SupabaseEvent[]>('events', 'POST', {
+      body: events
+    });
+    return created || [];
   }
 
-  async deleteEvent(eventId: string): Promise<boolean> {
+  async deleteEventByEmailId(userId: string, emailId: string): Promise<boolean> {
+    if (!emailId) return false;
     await this.request('events', 'DELETE', {
-      filters: { id: `eq.${eventId}` }
+      filters: {
+        user_id: `eq.${userId}`,
+        email_id: `eq.${emailId}`
+      }
     });
     return true;
   }
@@ -191,6 +170,10 @@ class SupabaseClient {
 let supabaseInstance: SupabaseClient | null = null;
 
 export const getSupabase = (): SupabaseClient | null => {
+  if (!config.supabase.syncEnabled) {
+    return null;
+  }
+
   if (!config.supabase.url || !config.supabase.anonKey) {
     console.warn('Supabase no configurado. La persistencia será solo local.');
     return null;

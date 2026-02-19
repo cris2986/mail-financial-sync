@@ -40,6 +40,7 @@ VITE_GOOGLE_CLIENT_ID=tu_google_client_id
 # Supabase (opcional - para persistencia en la nube)
 VITE_SUPABASE_URL=tu_supabase_url
 VITE_SUPABASE_ANON_KEY=tu_supabase_anon_key
+VITE_SUPABASE_SYNC_ENABLED=false
 ```
 
 ### Google Cloud Console
@@ -78,6 +79,7 @@ npm run build
    - `VITE_GOOGLE_CLIENT_ID`
    - `VITE_SUPABASE_URL` (opcional)
    - `VITE_SUPABASE_ANON_KEY` (opcional)
+   - `VITE_SUPABASE_SYNC_ENABLED` (`true` para habilitar persistencia en nube)
 5. **Deploy** automático
 
 ## 🧪 Testing
@@ -103,7 +105,9 @@ La aplicación es una **Progressive Web App**:
 
 - **Content Security Policy** configurada
 - **OAuth 2.0** con scopes mínimos
-- **Sin secrets** en el frontend
+- **`state` anti-CSRF** en OAuth redirect
+- **No se persisten access tokens** en `localStorage`
+- **No se registran tokens** en logs
 - **HTTPS** obligatorio en producción
 
 ## 📄 Licencia

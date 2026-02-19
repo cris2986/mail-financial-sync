@@ -736,7 +736,6 @@ export class GmailService {
           const errorText = await response.text();
           console.error(`Gmail API error (intento ${attempt + 1}):`, response.status, errorText);
           console.error(`Endpoint: ${endpoint}`);
-          console.error(`Token (primeros 20 chars): ${this.accessToken.substring(0, 20)}...`);
 
           // Si es un error de autenticación, no reintentar
           if (response.status === 401) {

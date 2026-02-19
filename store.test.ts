@@ -10,7 +10,10 @@ const mocks = vi.hoisted(() => ({
   getGoogleImplicitAuthUrl: vi.fn(),
   getFinancialEvents: vi.fn(),
   createGmailService: vi.fn(),
-  deleteEvent: vi.fn(),
+  getUser: vi.fn(),
+  createUser: vi.fn(),
+  createEvents: vi.fn(),
+  deleteEventByEmailId: vi.fn(),
   getSupabase: vi.fn(),
   getCurrentNotificationPermission: vi.fn(() => 'default'),
   requestNotificationPermission: vi.fn(),
@@ -90,6 +93,12 @@ describe('Store', () => {
       accessToken: 'refreshed-token',
       expiresAt: new Date(Date.now() + 60_000).toISOString()
     });
+    mocks.getUser.mockResolvedValue(null);
+    mocks.createUser.mockResolvedValue({
+      id: 'sup-user-1'
+    });
+    mocks.createEvents.mockResolvedValue([]);
+    mocks.deleteEventByEmailId.mockResolvedValue(true);
   });
 
   it('autentica con GIS y sincroniza eventos reales', async () => {
@@ -189,9 +198,10 @@ describe('Store', () => {
   it('deleteEvent elimina localmente y persiste en Supabase cuando aplica', async () => {
     const event = buildEvent();
     mocks.getSupabase.mockReturnValue({
-      deleteEvent: mocks.deleteEvent
+      getUser: mocks.getUser,
+      deleteEventByEmailId: mocks.deleteEventByEmailId
     });
-    mocks.deleteEvent.mockResolvedValue(true);
+    mocks.getUser.mockResolvedValue({ id: 'sup-user-1' });
 
     useAppStore.setState({
       user: {
@@ -209,7 +219,44 @@ describe('Store', () => {
     const state = useAppStore.getState();
 
     expect(state.events).toEqual([]);
-    expect(mocks.deleteEvent).toHaveBeenCalledWith(event.id);
+    expect(mocks.deleteEventByEmailId).toHaveBeenCalledWith('sup-user-1', event.id);
+  });
+
+  it('crea usuario en Supabase cuando no existe y guarda eventos nuevos', async () => {
+    const event = buildEvent();
+    mocks.getFinancialEvents.mockResolvedValue([event]);
+    mocks.getSupabase.mockReturnValue({
+      getUser: mocks.getUser,
+      createUser: mocks.createUser,
+      createEvents: mocks.createEvents
+    });
+    mocks.getUser.mockResolvedValue(null);
+    mocks.createUser.mockResolvedValue({ id: 'sup-user-1' });
+
+    await useAppStore.getState().loginWithGIS();
+
+    expect(mocks.createUser).toHaveBeenCalledWith({
+      email: 'user@gmail.com',
+      name: 'Test User',
+      google_id: 'google-user-1'
+    });
+    expect(mocks.createEvents).toHaveBeenCalledTimes(1);
+  });
+
+  it('exporta CSV protegido contra formula injection', () => {
+    const event = {
+      ...buildEvent(),
+      description: '=HYPERLINK(\"http://malicioso\")',
+      source: '@evil'
+    };
+    useAppStore.setState({
+      events: [event]
+    });
+
+    const csv = useAppStore.getState().exportToCSV();
+
+    expect(csv).toContain(`"'=HYPERLINK(""http://malicioso"")"`);
+    expect(csv).toContain(`"'@evil"`);
   });
 
   it('administra reglas inversas de bloqueo en scanSettings', () => {

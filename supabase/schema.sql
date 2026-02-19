@@ -7,17 +7,16 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- Tabla de usuarios
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  auth_user_id UUID NOT NULL UNIQUE DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT NOT NULL UNIQUE,
   name TEXT NOT NULL,
   google_id TEXT NOT NULL UNIQUE,
-  access_token TEXT,
-  refresh_token TEXT,
-  token_expires_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Índice para búsqueda por google_id
+-- Índices para búsqueda por usuario
+CREATE INDEX IF NOT EXISTS idx_users_auth_user_id ON users(auth_user_id);
 CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id);
 
 -- Tabla de eventos financieros
@@ -59,32 +58,89 @@ CREATE TRIGGER update_users_updated_at
 -- Row Level Security (RLS)
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE users FORCE ROW LEVEL SECURITY;
+ALTER TABLE events FORCE ROW LEVEL SECURITY;
 
--- Políticas RLS para users (solo el usuario puede ver/editar sus datos)
+DROP POLICY IF EXISTS "Users can view own profile" ON users;
+DROP POLICY IF EXISTS "Users can update own profile" ON users;
+DROP POLICY IF EXISTS "Service can insert users" ON users;
+DROP POLICY IF EXISTS "Users can insert own profile" ON users;
+DROP POLICY IF EXISTS "Users can delete own profile" ON users;
+DROP POLICY IF EXISTS "Users can view own events" ON events;
+DROP POLICY IF EXISTS "Users can insert own events" ON events;
+DROP POLICY IF EXISTS "Users can delete own events" ON events;
+DROP POLICY IF EXISTS "Users can update own events" ON events;
+
+-- Políticas RLS para users (solo dueño autenticado)
 CREATE POLICY "Users can view own profile"
   ON users FOR SELECT
-  USING (true);  -- Permitir lectura para autenticación
+  USING (auth.uid() = auth_user_id);
 
 CREATE POLICY "Users can update own profile"
   ON users FOR UPDATE
-  USING (true);
+  USING (auth.uid() = auth_user_id)
+  WITH CHECK (auth.uid() = auth_user_id);
 
-CREATE POLICY "Service can insert users"
+CREATE POLICY "Users can insert own profile"
   ON users FOR INSERT
-  WITH CHECK (true);
+  WITH CHECK (auth.uid() = auth_user_id);
+
+CREATE POLICY "Users can delete own profile"
+  ON users FOR DELETE
+  USING (auth.uid() = auth_user_id);
 
 -- Políticas RLS para events
 CREATE POLICY "Users can view own events"
   ON events FOR SELECT
-  USING (true);
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM users
+      WHERE users.id = events.user_id
+        AND users.auth_user_id = auth.uid()
+    )
+  );
 
 CREATE POLICY "Users can insert own events"
   ON events FOR INSERT
-  WITH CHECK (true);
+  WITH CHECK (
+    EXISTS (
+      SELECT 1
+      FROM users
+      WHERE users.id = events.user_id
+        AND users.auth_user_id = auth.uid()
+    )
+  );
 
 CREATE POLICY "Users can delete own events"
   ON events FOR DELETE
-  USING (true);
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM users
+      WHERE users.id = events.user_id
+        AND users.auth_user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Users can update own events"
+  ON events FOR UPDATE
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM users
+      WHERE users.id = events.user_id
+        AND users.auth_user_id = auth.uid()
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1
+      FROM users
+      WHERE users.id = events.user_id
+        AND users.auth_user_id = auth.uid()
+    )
+  );
 
 -- Vista para resumen mensual (opcional, puede calcularse en frontend)
 CREATE OR REPLACE VIEW monthly_summary AS
@@ -98,8 +154,9 @@ FROM events
 GROUP BY user_id, DATE_TRUNC('month', date);
 
 -- Comentarios de documentación
-COMMENT ON TABLE users IS 'Usuarios autenticados via Google OAuth';
+COMMENT ON TABLE users IS 'Usuarios autenticados por Supabase Auth (vinculados con Google ID)';
 COMMENT ON TABLE events IS 'Eventos financieros detectados desde correo';
 COMMENT ON COLUMN events.direction IS 'income = ingreso, expense = egreso';
 COMMENT ON COLUMN events.category IS 'card = pago tarjeta, credit = crédito, service = servicio, transfer = transferencia, income = ingreso';
 COMMENT ON COLUMN events.email_id IS 'ID del mensaje de Gmail para evitar duplicados';
+COMMENT ON COLUMN users.auth_user_id IS 'ID de auth.users para aplicar RLS por usuario autenticado';
