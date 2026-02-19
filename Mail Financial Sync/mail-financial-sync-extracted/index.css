@@ -1,0 +1,52 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/forms";
+
+/* Class-based dark mode — applied via .dark on root element */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-primary: #1a73e8;
+  --color-primary-dark: #137fec;
+  --color-bg-light: #F3F4F6;
+  --color-bg-dark: #101922;
+  --color-surface-dark: #1A2632;
+  --font-sans: Inter, sans-serif;
+  --animate-shimmer: shimmer 1.5s infinite linear;
+}
+
+@keyframes shimmer {
+  0% { background-position: -100% 0; }
+  100% { background-position: 100% 0; }
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.safe-top {
+  padding-top: env(safe-area-inset-top, 20px);
+}
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 20px);
+}

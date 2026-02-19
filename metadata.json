@@ -1,0 +1,5 @@
+{
+  "name": "Mail Financial Sync",
+  "description": "A privacy-first financial dashboard that syncs with your email to track expenses and income automatically.",
+  "requestFramePermissions": []
+}

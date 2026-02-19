@@ -1,0 +1,389 @@
+ENUNCIADO FUNCIONAL CENTRAL
+
+Mail Financial Sync es un visor financiero automático que extrae y consolida eventos financieros explícitos desde el correo del usuario para entregar una vista mensual parcial de ingresos y egresos, sin reemplazar estados de cuenta bancarios ni realizar contabilidad formal.
+
+Este enunciado gobierna todas las decisiones:
+	•	No contabilidad.
+	•	No open banking.
+	•	No precisión bancaria.
+	•	Sí visibilidad automática.
+	•	Sí simplicidad.
+	•	Sí control manual del usuario.
+	•	Alcance limitado y deliberado.
+
+⸻
+
+📐 Tech Doc — Arquitectura y Diseño Técnico
+
+⸻
+
+Estado de implementacion actual (February 17, 2026)
+
+Este documento combina arquitectura objetivo y estado actual.
+
+Estado actual en codigo:
+	•	Frontend SPA funcional.
+	•	OAuth real con Google Identity Services desde cliente.
+	•	Integracion real con Gmail API (scope readonly).
+	•	Extraccion y consolidacion de eventos financieros en cliente.
+
+Las secciones de backend y contratos API se mantienen como evolucion recomendada para endurecimiento de seguridad, observabilidad y escalabilidad.
+
+⸻
+
+1. Visión técnica
+
+• Nombre del producto: Mail Financial Sync
+• Objetivo técnico: Extraer eventos financieros detectables desde correo y consolidarlos en una vista mensual parcial, segura y editable.
+• Tipo de app: PWA client-heavy con backend serverless.
+• Restricciones explícitas:
+	•	No reconciliación bancaria.
+	•	No procesamiento de correo completo persistido.
+	•	No IA pesada en MVP.
+	•	Solo Gmail en MVP.
+• Offline-first: No (requiere API correo).
+• Privacidad local: Sí, persistencia mínima y encriptada.
+• Presupuesto/infraestructura: Bajo costo, serverless, sin servidores dedicados.
+• Dispositivos objetivo: Desktop y móvil vía navegador.
+
+⸻
+
+2. Arquitectura general
+
+• Estilo arquitectónico: SPA client-heavy + BFF serverless.
+
+Separación de capas
+
+UI → Renderización
+Dominio → Reglas de evento financiero
+Servicios → Parsing, consolidación
+Infraestructura → API correo, persistencia
+
+Flujo de datos
+
+UI → State → Services → API Gmail → Backend → Persistencia → UI
+
+Decisiones clave
+	•	Client-heavy para reducir costos.
+	•	Backend mínimo solo para OAuth y procesamiento controlado.
+	•	No lógica financiera compleja en servidor.
+	•	Modelo simple de eventos financieros.
+
+⸻
+
+3. Frontend
+
+3.1 Stack
+
+• Framework: React
+• Lenguaje: TypeScript
+• Bundler: Vite
+• Librerías base: React Router, Zustand (estado), Axios, date-fns
+
+⸻
+
+3.2 Estructura
+
+src/
+ ├─ components/
+ ├─ pages/
+ ├─ state/
+ ├─ services/
+ ├─ hooks/
+ ├─ styles/
+ ├─ utils/
+
+
+⸻
+
+3.3 Componentes
+
+• Principios:
+	•	Simples.
+	•	Predecibles.
+	•	Sin lógica financiera compleja en UI.
+
+• Componentes base:
+	•	SummaryCard
+	•	EventItem
+	•	MonthSelector
+	•	EmptyState
+	•	ErrorState
+
+• Componentes compuestos:
+	•	MonthlyDashboard
+	•	EventList
+
+• Reglas:
+	•	UI no procesa datos.
+	•	Toda lógica en services.
+
+⸻
+
+3.4 Estado
+
+• Tipo: Global liviano + local.
+• Librería: Zustand.
+• Flujo: Servicios actualizan store → UI re-renderiza.
+• Global: Usuario, eventos, resumen mensual.
+• Local: Estados de UI.
+
+⸻
+
+3.5 Navegación
+
+• Tipo: SPA con React Router.
+• Rutas:
+	•	/login
+	•	/dashboard
+	•	/history
+• Guards:
+	•	Dashboard requiere autenticación.
+
+⸻
+
+3.6 Manejo de estados UX
+
+• Loading: skeleton simple.
+• Empty: “No se detectaron eventos”.
+• Error: mensaje claro sin tecnicismos.
+• Offline: aviso informativo.
+
+⸻
+
+3.7 Theming y accesibilidad
+
+• Tokens:
+	•	Escala de grises + color primario.
+	•	Espaciado 8px base.
+• Dark/Light: Sí.
+• Accesibilidad:
+	•	Contraste mínimo AA.
+	•	Tipografía mínima 14px.
+	•	Navegación teclado básica.
+
+⸻
+
+4. Backend
+
+4.1 Rol del backend
+
+• Tipo: BFF serverless.
+• Responsabilidades:
+	•	OAuth Gmail.
+	•	Interacción segura con API Gmail.
+	•	Parsing controlado.
+• Qué no hace:
+	•	No guarda correos completos.
+	•	No lógica financiera avanzada.
+
+⸻
+
+4.2 Stack
+
+• Lenguaje: TypeScript
+• Framework: Node.js + Express (serverless adaptado)
+• Runtime: Cloudflare Workers o Vercel Functions
+
+⸻
+
+4.3 Estructura
+
+api/
+ ├─ routes/
+ ├─ controllers/
+ ├─ services/
+ ├─ models/
+
+
+⸻
+
+4.4 Manejo de errores
+
+• Formato estándar:
+
+{
+  "error": "string",
+  "code": "string"
+}
+
+• Logging: solo errores críticos.
+• No exponer stacktrace.
+
+⸻
+
+5. Contratos API
+
+5.1 Convenciones
+
+• Versionado: /v1
+• Autenticación: Bearer token JWT
+• Formato: JSON
+
+⸻
+
+5.2 Endpoints
+
+GET /v1/events
+GET /v1/summary
+DELETE /v1/events/{id}
+POST /v1/auth/login
+POST /v1/auth/logout
+
+⸻
+
+5.3 DTO
+
+{
+  "id": "string",
+  "amount": number,
+  "direction": "income | expense",
+  "type": "card | credit | service | transfer | income",
+  "date": "ISO string",
+  "source": "string"
+}
+
+
+⸻
+
+6. Persistencia y datos
+
+• Tipo: Base de datos ligera (Supabase o similar).
+• Modelo inicial:
+	•	User
+	•	Event
+• Migraciones: manual controladas.
+• Backups: automáticos del proveedor.
+• Encriptación: en tránsito y reposo.
+
+⸻
+
+7. Autenticación y seguridad
+
+• ¿Hay auth?: Sí
+• Tipo: OAuth Gmail
+• Sesiones: JWT corto + refresh
+• Permisos: solo lectura de correos financieros
+• Datos sensibles: tokens OAuth
+• Evitar:
+	•	Persistir cuerpo completo del correo
+	•	Logs con datos financieros
+
+⸻
+
+8. Performance
+
+• Objetivo:
+	•	Carga inicial <2s
+	•	Dashboard <1s tras login
+• Caching:
+	•	Eventos cacheados por sesión
+• Lazy loading:
+	•	Historial por mes
+• No optimizar:
+	•	Micro-optimización prematura
+
+⸻
+
+9. Testing y calidad
+
+• Tests:
+	•	Unitarios (parsing)
+	•	Integración (API Gmail mock)
+• Siempre testear:
+	•	Clasificación ingreso/egreso
+• Manual:
+	•	Flujo OAuth
+• Pre-release:
+	•	Dataset real anonimizado
+
+⸻
+
+10. Build, deploy y entornos
+
+• Entornos:
+	•	dev
+	•	staging
+	•	prod
+• Variables:
+	•	CLIENT_ID
+	•	CLIENT_SECRET
+• Build:
+	•	Vite build
+• Deploy:
+	•	Vercel
+• Rollback:
+	•	Deploy anterior automático
+
+⸻
+
+11. Observabilidad
+
+• Logging:
+	•	Errores backend
+• Errores:
+	•	Sentry
+• Métricas:
+	•	Eventos detectados
+	•	Errores parsing
+• Alertas:
+	•	Fallo OAuth
+
+⸻
+
+12. Convenciones de desarrollo
+
+• Naming:
+	•	camelCase variables
+	•	PascalCase componentes
+• Commits:
+	•	feat:
+	•	fix:
+	•	refactor:
+• Branching:
+	•	main
+	•	feature/*
+• IA:
+	•	No introducir librerías sin aprobación.
+	•	No ampliar alcance.
+• No permitido:
+	•	Funciones fuera del enunciado central.
+
+⸻
+
+13. Riesgos y decisiones
+
+Decisiones tomadas
+	•	Solo Gmail MVP.
+	•	Sin contabilidad formal.
+	•	Serverless.
+
+Trade-offs
+	•	Datos parciales aceptados.
+	•	No offline-first.
+
+Riesgos
+	•	Políticas Google.
+	•	Precisión parsing.
+	•	Confianza usuario.
+
+Revisión futura
+	•	Multi-correo.
+	•	Mejora clasificación.
+
+⸻
+
+14. Apéndice
+
+Glosario
+
+Evento financiero: registro detectado desde correo con monto y dirección.
+
+Referencias
+
+Gmail API Docs
+OAuth 2.0 Spec
+
+Diagrama alto nivel
+
+Usuario → PWA → Backend → Gmail API → Backend → DB → PWA

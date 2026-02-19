@@ -1,0 +1,177 @@
+Design Document — Mail Financial Sync
+
+⸻
+
+1. Visión del Producto
+
+Mail Financial Sync es una herramienta de visibilidad financiera automática basada exclusivamente en eventos detectados en el correo electrónico del usuario.
+
+No es una app de contabilidad ni reemplaza estados de cuenta bancarios. Su propósito es entregar una vista simplificada y parcial del flujo de dinero (ingresos y egresos) a partir de información digital explícita.
+
+Propuesta central:
+
+Dar conciencia financiera automática sin requerir conexión bancaria.
+
+⸻
+
+2. Principios de Diseño
+	1.	Claridad sobre completitud
+El sistema debe dejar explícito que la información es parcial.
+	2.	Simplicidad funcional
+Solo ingresos, egresos y tipos generales.
+	3.	Transparencia
+El usuario debe poder ver qué fue detectado y eliminar errores.
+	4.	Confianza
+Minimizar percepción de invasión y evitar sobre-promesas.
+	5.	Minimalismo estructural
+No agregar funciones financieras complejas.
+
+⸻
+
+3. Definición de Alcance Funcional
+
+Núcleo del producto
+	•	Conexión a una cuenta de correo compatible.
+	•	Detección de eventos financieros explícitos.
+	•	Clasificación binaria: ingreso / egreso.
+	•	Clasificación amplia:
+	•	Pago tarjeta
+	•	Crédito
+	•	Servicio básico
+	•	Transferencia
+	•	Ingreso
+	•	Consolidación mensual.
+	•	Historial por mes.
+	•	Eliminación manual de registros.
+	•	Exportación básica.
+
+⸻
+
+4. Modelo Conceptual del Producto
+
+Fuente de verdad
+
+El sistema depende exclusivamente de correos detectables con información financiera clara.
+
+Naturaleza de los datos
+	•	Parciales.
+	•	Dependientes del formato del emisor.
+	•	No reconciliados con banco.
+	•	No exhaustivos.
+
+Unidad básica del sistema
+
+Evento financiero detectado:
+	•	Fecha
+	•	Monto
+	•	Dirección (Ingreso/Egreso)
+	•	Tipo general
+	•	Fuente (emisor)
+
+⸻
+
+5. Flujos de Usuario (alto nivel)
+
+Flujo 1: Activación
+	1.	Usuario conecta su correo.
+	2.	Sistema analiza histórico reciente.
+	3.	Se generan eventos detectados.
+	4.	Usuario revisa resumen mensual.
+
+Objetivo: generar valor en la primera sesión.
+
+⸻
+
+Flujo 2: Revisión mensual
+	1.	Usuario ingresa.
+	2.	Visualiza:
+	•	Total ingresos.
+	•	Total egresos.
+	•	Diferencia estimada.
+	3.	Puede revisar eventos individuales.
+	4.	Puede eliminar errores.
+
+Objetivo: reforzar percepción de utilidad.
+
+⸻
+
+Flujo 3: Corrección
+	1.	Usuario identifica evento incorrecto.
+	2.	Elimina registro.
+	3.	El sistema ajusta consolidado.
+
+Objetivo: mantener credibilidad.
+
+⸻
+
+6. Experiencia y Comunicación
+
+El producto debe comunicar explícitamente:
+	•	“Vista estimada”.
+	•	“Basado en correos detectados”.
+	•	“No reemplaza estados de cuenta”.
+
+Debe evitar lenguaje como:
+	•	Balance real.
+	•	Estado financiero completo.
+	•	Contabilidad.
+	•	Precisión total.
+
+⸻
+
+7. Restricciones del Diseño
+	1.	No incluir presupuestos.
+	2.	No incluir metas.
+	3.	No incluir predicción.
+	4.	No incluir categorías detalladas.
+	5.	No incluir reconciliación bancaria.
+	6.	No incluir múltiples fuentes financieras externas.
+	7.	No almacenar contenido completo de correos innecesariamente.
+
+El sistema debe permanecer deliberadamente limitado.
+
+⸻
+
+8. Criterios de Calidad del Producto
+
+Para que el diseño sea válido:
+	•	La consolidación mensual debe ser coherente.
+	•	El usuario debe entender qué está viendo en menos de 30 segundos.
+	•	La eliminación manual debe ser simple.
+	•	El sistema debe fallar de forma transparente (no inventar datos).
+
+⸻
+
+9. Métricas de Validación de Diseño
+	•	% de usuarios que entienden que es una vista parcial.
+	•	Tasa de eliminación manual (indicador de precisión).
+	•	Retención mensual.
+	•	Frecuencia de revisión mensual.
+	•	Número promedio de eventos detectados por usuario.
+
+⸻
+
+10. Riesgos de Diseño
+	1.	Expectativa incorrecta de exactitud.
+	2.	Saturación de eventos irrelevantes.
+	3.	Falta de volumen suficiente de correos financieros.
+	4.	Percepción de invasión.
+	5.	Desconfianza inicial en acceso al correo.
+
+⸻
+
+11. Evolución Controlada (Post-MVP)
+
+Solo si el núcleo funciona:
+	•	Mejoras en precisión de detección.
+	•	Reglas personalizadas por usuario.
+	•	Soporte adicional de proveedor de correo.
+	•	Filtros avanzados.
+
+No se contempla evolución hacia fintech completa.
+
+⸻
+
+Declaración Final
+
+Mail Financial Sync es un visor financiero automático basado en eventos detectables en correo electrónico. Su diseño prioriza simplicidad, transparencia y alcance limitado para evitar competir con sistemas financieros formales y mantener viabilidad para un desarrollo controlado.

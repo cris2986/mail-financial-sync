@@ -1,0 +1,11 @@
+{
+  "name": "Mail Financial Sync",
+  "short_name": "MailSync",
+  "description": "Vista financiera automática basada en eventos detectados en Gmail.",
+  "theme_color": "#1a73e8",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "start_url": "/",
+  "scope": "/",
+  "lang": "es"
+}
