@@ -1,21 +1,19 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore, categoryLabels } from '../store';
-import { EmailRule, EventCategory } from '../types';
+import { EmailRule, EventCategory, ScanSettings } from '../types';
 
 export const RulesView: React.FC = () => {
   const navigate = useNavigate();
-  const {
-    scanSettings,
-    addRule,
-    removeRule,
-    toggleRule,
-    setUseDefaultSenders,
-    setDaysToScan,
-    toggleCategory,
-    syncEvents,
-    syncStatus
-  } = useAppStore();
+  const scanSettings = useAppStore((state) => state.scanSettings);
+  const addRule = useAppStore((state) => state.addRule);
+  const removeRule = useAppStore((state) => state.removeRule);
+  const toggleRule = useAppStore((state) => state.toggleRule);
+  const setUseDefaultSenders = useAppStore((state) => state.setUseDefaultSenders);
+  const setDaysToScan = useAppStore((state) => state.setDaysToScan);
+  const toggleCategory = useAppStore((state) => state.toggleCategory);
+  const syncEvents = useAppStore((state) => state.syncEvents);
+  const syncStatus = useAppStore((state) => state.syncStatus);
 
   const isSyncing = syncStatus === 'syncing';
 
@@ -35,91 +33,103 @@ export const RulesView: React.FC = () => {
   const [excludedKeywordError, setExcludedKeywordError] = useState<string | null>(null);
   const [excludedSubjectError, setExcludedSubjectError] = useState<string | null>(null);
 
-  const handleAddSender = () => {
-    const value = newSender.trim().toLowerCase();
-    if (value) {
-      // Verificar duplicados
-      const isDuplicate = scanSettings.customSenders.some(
-        r => r.value.toLowerCase() === value
-      );
-      if (isDuplicate) {
-        setSenderError('Este emisor ya existe');
-        return;
-      }
-      addRule('sender', newSender);
-      setNewSender('');
-      setShowAddSender(false);
-      setSenderError(null);
+  type RuleListKey = keyof Pick<
+    ScanSettings,
+    'customSenders' | 'keywords' | 'excludedSenders' | 'excludedKeywords' | 'excludedSubjects'
+  >;
+
+  const addRuleWithValidation = (
+    rawValue: string,
+    type: EmailRule['type'],
+    listKey: RuleListKey,
+    duplicateMessage: string,
+    onAdded: () => void,
+    setError: (value: string | null) => void
+  ) => {
+    const value = rawValue.trim().toLowerCase();
+    if (!value) {
+      return;
     }
+
+    const isDuplicate = scanSettings[listKey].some((rule) => rule.value.toLowerCase() === value);
+    if (isDuplicate) {
+      setError(duplicateMessage);
+      return;
+    }
+
+    addRule(type, rawValue);
+    onAdded();
+    setError(null);
+  };
+
+  const handleAddSender = () => {
+    addRuleWithValidation(
+      newSender,
+      'sender',
+      'customSenders',
+      'Este emisor ya existe',
+      () => {
+        setNewSender('');
+        setShowAddSender(false);
+      },
+      setSenderError
+    );
   };
 
   const handleAddKeyword = () => {
-    const value = newKeyword.trim().toLowerCase();
-    if (value) {
-      // Verificar duplicados
-      const isDuplicate = scanSettings.keywords.some(
-        r => r.value.toLowerCase() === value
-      );
-      if (isDuplicate) {
-        setKeywordError('Esta palabra clave ya existe');
-        return;
-      }
-      addRule('keyword', newKeyword);
-      setNewKeyword('');
-      setShowAddKeyword(false);
-      setKeywordError(null);
-    }
+    addRuleWithValidation(
+      newKeyword,
+      'keyword',
+      'keywords',
+      'Esta palabra clave ya existe',
+      () => {
+        setNewKeyword('');
+        setShowAddKeyword(false);
+      },
+      setKeywordError
+    );
   };
 
   const handleAddExcludedSender = () => {
-    const value = newExcludedSender.trim().toLowerCase();
-    if (value) {
-      const isDuplicate = scanSettings.excludedSenders.some(
-        r => r.value.toLowerCase() === value
-      );
-      if (isDuplicate) {
-        setExcludedSenderError('Este emisor bloqueado ya existe');
-        return;
-      }
-      addRule('excluded_sender', newExcludedSender);
-      setNewExcludedSender('');
-      setShowAddExcludedSender(false);
-      setExcludedSenderError(null);
-    }
+    addRuleWithValidation(
+      newExcludedSender,
+      'excluded_sender',
+      'excludedSenders',
+      'Este emisor bloqueado ya existe',
+      () => {
+        setNewExcludedSender('');
+        setShowAddExcludedSender(false);
+      },
+      setExcludedSenderError
+    );
   };
 
   const handleAddExcludedKeyword = () => {
-    const value = newExcludedKeyword.trim().toLowerCase();
-    if (value) {
-      const isDuplicate = scanSettings.excludedKeywords.some(
-        r => r.value.toLowerCase() === value
-      );
-      if (isDuplicate) {
-        setExcludedKeywordError('Esta palabra bloqueada ya existe');
-        return;
-      }
-      addRule('excluded_keyword', newExcludedKeyword);
-      setNewExcludedKeyword('');
-      setShowAddExcludedKeyword(false);
-      setExcludedKeywordError(null);
-    }
+    addRuleWithValidation(
+      newExcludedKeyword,
+      'excluded_keyword',
+      'excludedKeywords',
+      'Esta palabra bloqueada ya existe',
+      () => {
+        setNewExcludedKeyword('');
+        setShowAddExcludedKeyword(false);
+      },
+      setExcludedKeywordError
+    );
   };
 
   const handleAddExcludedSubject = () => {
-    const value = newExcludedSubject.trim().toLowerCase();
-    if (value) {
-      const isDuplicate = scanSettings.excludedSubjects.some(
-        r => r.value.toLowerCase() === value
-      );
-      if (isDuplicate) {
-        setExcludedSubjectError('Este asunto bloqueado ya existe');
-        return;
-      }
-      addRule('excluded_subject', newExcludedSubject);
-      setNewExcludedSubject('');
-      setShowAddExcludedSubject(false);
-      setExcludedSubjectError(null);
-    }
+    addRuleWithValidation(
+      newExcludedSubject,
+      'excluded_subject',
+      'excludedSubjects',
+      'Este asunto bloqueado ya existe',
+      () => {
+        setNewExcludedSubject('');
+        setShowAddExcludedSubject(false);
+      },
+      setExcludedSubjectError
+    );
   };
 
   const handleSyncNow = async () => {

@@ -4,20 +4,18 @@ import { useAppStore } from '../store';
 
 export const SettingsView: React.FC = () => {
   const navigate = useNavigate();
-  const {
-    darkMode,
-    toggleDarkMode,
-    user,
-    logout,
-    syncMetadata,
-    clearSyncCache,
-    syncEvents,
-    events,
-    syncStatus,
-    notificationsEnabled,
-    notificationPermission,
-    setNotificationsEnabled
-  } = useAppStore();
+  const darkMode = useAppStore((state) => state.darkMode);
+  const toggleDarkMode = useAppStore((state) => state.toggleDarkMode);
+  const user = useAppStore((state) => state.user);
+  const logout = useAppStore((state) => state.logout);
+  const syncMetadata = useAppStore((state) => state.syncMetadata);
+  const clearSyncCache = useAppStore((state) => state.clearSyncCache);
+  const syncEvents = useAppStore((state) => state.syncEvents);
+  const events = useAppStore((state) => state.events);
+  const syncStatus = useAppStore((state) => state.syncStatus);
+  const notificationsEnabled = useAppStore((state) => state.notificationsEnabled);
+  const notificationPermission = useAppStore((state) => state.notificationPermission);
+  const setNotificationsEnabled = useAppStore((state) => state.setNotificationsEnabled);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 

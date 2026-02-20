@@ -4,7 +4,10 @@ import { useAppStore } from '../store';
 
 export const HistoryView: React.FC = () => {
   const navigate = useNavigate();
-  const { events, setSelectedMonth, selectedMonth, exportToCSV } = useAppStore();
+  const events = useAppStore((state) => state.events);
+  const setSelectedMonth = useAppStore((state) => state.setSelectedMonth);
+  const selectedMonth = useAppStore((state) => state.selectedMonth);
+  const exportToCSV = useAppStore((state) => state.exportToCSV);
 
   // Agregar eventos por mes
   const historyData = events.reduce((acc, e) => {

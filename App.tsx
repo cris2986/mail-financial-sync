@@ -19,7 +19,8 @@ interface RequireAuthProps {
 }
 
 const RequireAuth: React.FC<RequireAuthProps> = ({ children }) => {
-  const { user, authStatus } = useAppStore();
+  const user = useAppStore((state) => state.user);
+  const authStatus = useAppStore((state) => state.authStatus);
   const [isHydrated, setIsHydrated] = useState(useAppStore.persist.hasHydrated());
 
   // Suscribirse a la hidratación del store
@@ -45,7 +46,8 @@ const RequireAuth: React.FC<RequireAuthProps> = ({ children }) => {
 };
 
 const App: React.FC = () => {
-  const { darkMode, user } = useAppStore();
+  const darkMode = useAppStore((state) => state.darkMode);
+  const user = useAppStore((state) => state.user);
   const location = useLocation();
 
   const showBottomNav =

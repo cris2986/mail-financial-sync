@@ -5,7 +5,14 @@ import { FinancialEvent } from '../types';
 
 export const DashboardView: React.FC = () => {
   const navigate = useNavigate();
-  const { events, selectedMonth, deleteEvent, setSelectedMonth, syncEvents, syncStatus, syncError, syncProgress } = useAppStore();
+  const events = useAppStore((state) => state.events);
+  const selectedMonth = useAppStore((state) => state.selectedMonth);
+  const deleteEvent = useAppStore((state) => state.deleteEvent);
+  const setSelectedMonth = useAppStore((state) => state.setSelectedMonth);
+  const syncEvents = useAppStore((state) => state.syncEvents);
+  const syncStatus = useAppStore((state) => state.syncStatus);
+  const syncError = useAppStore((state) => state.syncError);
+  const syncProgress = useAppStore((state) => state.syncProgress);
   const [eventToDelete, setEventToDelete] = useState<FinancialEvent | null>(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
@@ -164,12 +171,11 @@ export const DashboardView: React.FC = () => {
             </div>
             {syncProgress && syncProgress.totalSteps > 1 && (
               <div className="w-full max-w-xs">
-                <div className="h-1.5 bg-blue-200 dark:bg-blue-800 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-blue-600 dark:bg-blue-400 rounded-full transition-all duration-300"
-                    style={{ width: `${Math.round((syncProgress.currentStep / syncProgress.totalSteps) * 100)}%` }}
-                  />
-                </div>
+                <progress
+                  className="w-full h-1.5 rounded-full overflow-hidden [&::-webkit-progress-bar]:bg-blue-200 [&::-webkit-progress-value]:bg-blue-600 dark:[&::-webkit-progress-bar]:bg-blue-800 dark:[&::-webkit-progress-value]:bg-blue-400 [&::-moz-progress-bar]:bg-blue-600 dark:[&::-moz-progress-bar]:bg-blue-400"
+                  max={syncProgress.totalSteps}
+                  value={Math.min(syncProgress.currentStep, syncProgress.totalSteps)}
+                />
                 <p className="text-xs text-blue-600 dark:text-blue-400 text-center mt-1">
                   {syncProgress.currentStep} de {syncProgress.totalSteps}
                 </p>
