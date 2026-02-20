@@ -3,7 +3,6 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { AppState, FinancialEvent, MonthlySummary, SyncStatus, SyncProgress, EmailRule, EventCategory, SyncMetadata } from './types';
 import { revokeGoogleAccess } from './services/googleAuth';
 import { requestAccessToken, refreshAccessToken, fetchUserInfo, clearTokenClient } from './services/googleIdentity';
-import { createGmailService } from './services/gmailApi';
 import { getSupabase } from './services/supabase';
 import { getCurrentNotificationPermission, notifyNewEvents, requestNotificationPermission } from './services/notifications';
 import { config } from './config/env';
@@ -460,6 +459,8 @@ export const useAppStore = create<AppState>()(
     }
 
     try {
+      const { createGmailService } = await import('./services/gmailApi');
+
       // Callback de progreso para actualizar el UI
       const onProgress = (phase: string, current: number, total: number, message: string) => {
         set({
